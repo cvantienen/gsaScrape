@@ -27,7 +27,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the scraper script into the container
-COPY elibDownload.py /app/elibDownload.py
+COPY elibDownload.py /app/src/elibDownload.py
 
 # Set the default command to run the scraper script
 CMD ["python", "elibDownload.py"]
