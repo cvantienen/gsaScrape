@@ -6,7 +6,7 @@ import pandas as pd
 import traceback
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
@@ -64,7 +64,11 @@ def get_contractor_details(driver, link):
 
 missingTerms = []
 errorlink = []
-driver = webdriver.Firefox()
+
+# Set up the Selenium WebDriver
+options = Options()
+options.add_argument("--headless")
+driver = webdriver.Firefox(options=options)
 
 for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
     try:
@@ -77,7 +81,7 @@ for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
                 continue
             else:
                 raise e  # Re-raise the exception if it's not a DNS issue
-        time.sleep(5)
+        time.sleep(1)
         elems = driver.find_elements(By.XPATH, "//a[@href]")
         links = [elem.get_attribute("href") for elem in elems if elem.get_attribute("href")[:58] == 'https://www.gsaelibrary.gsa.gov/ElibMain/contractorInfo.do']
         for link in links:
@@ -88,7 +92,7 @@ for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
                 if not info:
                     print(f"Failed to extract details for {contractor}. Skipping...")
                     missingTerms.append(contractor.replace('+', ' '))
-                time.sleep(5)
+                time.sleep(1)
             except TimeoutException:
                 print(f"Timeout while navigating to {link}. Skipping...")
                 errorlink.append(contractor.replace('+', ' '))
