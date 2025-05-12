@@ -30,4 +30,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/elibDownload.py /app/src/elibDownload.py
 
 # Set the default command to run the scraper script
-CMD ["python", "elibDownload.py"]
+CMD ["python", "src/elibDownload.py"]
