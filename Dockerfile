@@ -14,6 +14,12 @@ RUN apt-get update && apt-get install -y \
     curl \
     firefox-esr \
     xvfb \
+    libgtk-3-0 \
+    libdbus-glib-1-2 \
+    libxt6 \
+    libxrender1 \
+    libxcomposite1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install geckodriver (required for Selenium with Firefox)
