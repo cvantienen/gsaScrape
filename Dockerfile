@@ -17,17 +17,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install geckodriver (required for Selenium with Firefox)
-RUN wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.33.0-linux64.tar.gz \
-    && tar -xvzf geckodriver-v0.33.0-linux64.tar.gz \
+RUN wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.36.0-linux64.tar.gz \
+    && tar -xvzf geckodriver-v0.36.0-linux64.tar.gz \
     && mv geckodriver /usr/local/bin/ \
-    && rm geckodriver-v0.33.0-linux64.tar.gz
+    && rm geckodriver-v0.36.0-linux64.tar.gz
 
 # Copy the requirements.txt file (if you have one) and install dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the scraper script into the container
-COPY scraper.py /app/scraper.py
+COPY elibDownload.py /app/elibDownload.py
 
 # Set the default command to run the scraper script
-CMD ["python", "scraper.py"]
+CMD ["python", "elibDownload.py"]
