@@ -8,9 +8,21 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_element_text(driver, xpath, attr=None):
+    """
+    Extracts text or attribute value from an element located by the given XPath.
+
+    Args:
+        driver: Selenium WebDriver instance.
+        xpath: XPath string to locate the element.
+        attr: Optional attribute name to extract (e.g., "href"). If None, extracts text.
+
+    Returns:
+        The extracted text or attribute value, or None if the element is not found.
+    """
     try:
         element = driver.find_element(By.XPATH, xpath)
         if attr:
@@ -21,41 +33,101 @@ def get_element_text(driver, xpath, attr=None):
 
 
 def save_contractor_details(details, output_file="contractor_data.csv"):
+    """
+    Saves contractor details to a CSV file. Appends to the file if it already exists.
+
+    Args:
+        details: Dictionary containing contractor details.
+        output_file: Name of the CSV file to save the data.
+    """
     file_exists = os.path.isfile(output_file)
-    with open(output_file, mode='a', newline='', encoding='utf-8') as f:
+    with open(output_file, mode="a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=details.keys())
         if not file_exists:
-            writer.writeheader()
-        writer.writerow(details)
+            writer.writeheader()  # Write header only if the file is new
+        writer.writerow(details)  # Append the contractor details
 
 
 def get_contractor_details(driver, link):
+    """
+    Extracts detailed information about a contractor from the given link.
+
+    Args:
+        driver: Selenium WebDriver instance.
+        link: URL of the contractor details page.
+
+    Returns:
+        A dictionary containing contractor details, or None if an error occurs.
+    """
     try:
-        driver.get(link)
+        driver.get(link)  # Navigate to the contractor details page
+
+        # Extract contractor details using helper function
         details = {
-            'Contract Number': get_element_text(driver, "//td[font[contains(text(), 'Contract #:')]]/following-sibling::td/font"),
-            'Contractor': get_element_text(driver, "//td[font[contains(text(), 'Contractor:')]]/following-sibling::td/font"),
-            'Address': get_element_text(driver, "//td[font[contains(text(), 'Address:')]]/following-sibling::td/font", attr="innerHTML").replace("<br>", ", ") if get_element_text(driver, "//td[font[contains(text(), 'Address:')]]/following-sibling::td/font", attr="innerHTML") else None,
-            'Phone': get_element_text(driver, "//td[font[contains(text(), 'Call:')]]/following-sibling::td/font"),
-            'Email': get_element_text(driver, "//td[font[contains(text(), 'Email:')]]/following-sibling::td/font/a"),
-            'Web Address': get_element_text(driver, "//td[font[contains(text(), 'Web Address:')]]/following-sibling::td/font/a", attr="href"),
-            'SAM UEI': get_element_text(driver, "//td[font[contains(text(), 'SAM UEI:')]]/following-sibling::td/font"),
-            'NAICS': get_element_text(driver, "//td[font[contains(text(), 'NAICS:')]]/following-sibling::td/font"),
-            'Socio-Economic': get_element_text(driver, "//td[font[contains(text(), 'Socio-Economic :')]]/following-sibling::td/font", attr="innerHTML").replace("<br>", ", ") if get_element_text(driver, "//td[font[contains(text(), 'Socio-Economic :')]]/following-sibling::td/font", attr="innerHTML") else None,
-            'Current Option Period End Date': get_element_text(driver, "//td[font[contains(text(), 'Current Option Period End Date :')]]/following-sibling::td/font"),
-            'Ultimate Contract End Date': get_element_text(driver, "//td[font[contains(text(), 'Ultimate Contract End Date :')]]/following-sibling::td/font"),
-            'Govt. POC Name': get_element_text(driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[2]"),
-            'Govt. POC Phone': get_element_text(driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[3]"),
-            'Govt. POC Email': get_element_text(driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[4]/a"),
-            'Contract Clauses Link': get_element_text(driver, "//font[contains(text(), 'Contract Clauses/Exceptions:')]/following-sibling::a", attr="href"),
-            'EPLS Status': get_element_text(driver, "//td[font[contains(text(), 'EPLS :')]]/following-sibling::td/font")
+            "Contract Number": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Contract #:')]]/following-sibling::td/font",
+            ),
+            "Contractor": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Contractor:')]]/following-sibling::td/font",
+            ),
+            "Address": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Address:')]]/following-sibling::td/font",
+                attr="innerHTML",
+            ).replace("<br>", ", "),
+            "Phone": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Call:')]]/following-sibling::td/font",
+            ),
+            "Email": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Email:')]]/following-sibling::td/font/a",
+            ),
+            "Web Address": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Web Address:')]]/following-sibling::td/font/a",
+                attr="href",
+            ),
+            "SAM UEI": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'SAM UEI:')]]/following-sibling::td/font",
+            ),
+            "NAICS": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'NAICS:')]]/following-sibling::td/font",
+            ),
+            "Current Option Period End Date": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Current Option Period End Date :')]]/following-sibling::td/font",
+            ),
+            "Ultimate Contract End Date": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Ultimate Contract End Date :')]]/following-sibling::td/font",
+            ),
+            "Govt. POC Name": get_element_text(
+                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[2]"
+            ),
+            "Govt. POC Phone": get_element_text(
+                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[3]"
+            ),
+            "Govt. POC Email": get_element_text(
+                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[4]/a"
+            ),
         }
 
+        # Extract additional details (e.g., Terms & Conditions link)
         try:
-            onclick_attr = driver.find_element(By.XPATH, "//button[contains(@title, 'view Contractors Terms & Conditions')]").get_attribute("onclick")
-            details['Terms & Conditions Link'] = onclick_attr.split("'")[1] if onclick_attr else None
+            onclick_attr = driver.find_element(
+                By.XPATH,
+                "//button[contains(@title, 'view Contractors Terms & Conditions')]",
+            ).get_attribute("onclick")
+            details["Terms & Conditions Link"] = (
+                onclick_attr.split("'")[1] if onclick_attr else None
+            )
         except Exception:
-            details['Terms & Conditions Link'] = None
+            details["Terms & Conditions Link"] = None
 
         print(f"Details extracted for {details['Contractor'] or 'Unknown Contractor'}")
         return details
@@ -65,60 +137,108 @@ def get_contractor_details(driver, link):
         return None
 
 
-def scrape_contractors(test_mode=False):
-    missing_terms = []
-    error_links = []
+def process_contractor_link(driver, link):
+    """
+    Worker function to process a single contractor link.
+
+    Args:
+        driver: Selenium WebDriver instance.
+        link: URL of the contractor details page.
+
+    Returns:
+        None
+    """
+    try:
+        contractor = urllib.parse.unquote(
+            link.split("contractorName=")[-1].split("&")[0]
+        )
+        info = get_contractor_details(driver, link)
+        if info:
+            save_contractor_details(info)  # Save the extracted details
+        else:
+            print(f"Failed to extract details for {contractor}. Skipping...")
+            return contractor.replace("+", " ")
+    except TimeoutException:
+        print(f"Timeout while navigating to {link}. Skipping...")
+        return link
+    except WebDriverException as e:
+        if "dnsNotFound" in str(e):
+            print(f"DNS or invalid URL issue for link: {link}. Skipping...")
+            return link
+        else:
+            raise e  # Re-raise the exception if it's not a DNS issue
+    return None
+
+
+def scrape_contractors(test_mode=True):
+    """
+    Scrapes contractor details for all letters A-Z and saves them to a CSV file.
+
+    Args:
+        test_mode: If True, adds a delay between requests for testing purposes.
+    """
+
+    # Set up the Selenium WebDriver
     options = Options()
-    options.add_argument("--headless")
+    options.add_argument("--headless")  # Run in headless mode for faster execution
     driver = webdriver.Firefox(options=options)
 
+    # Iterate through all letters A-Z
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         try:
             url = f"https://www.gsaelibrary.gsa.gov/ElibMain/contractorList.do?contractorListFor={letter}"
             try:
-                driver.get(url)
+                driver.get(url)  # Navigate to the contractor list page
             except WebDriverException as e:
                 if "dnsNotFound" in str(e):
                     print(f"DNS resolution issue for URL: {url}. Skipping...")
                     continue
                 else:
-                    raise e
+                    raise e  # Re-raise the exception if it's not a DNS issue
 
+            # Extract all contractor links from the page
             elems = driver.find_elements(By.XPATH, "//a[@href]")
-            links = [elem.get_attribute("href") for elem in elems if elem.get_attribute("href").startswith("https://www.gsaelibrary.gsa.gov/ElibMain/contractorInfo.do")]
+            links = [
+                elem.get_attribute("href")
+                for elem in elems
+                if elem.get_attribute("href").startswith(
+                    "https://www.gsaelibrary.gsa.gov/ElibMain/contractorInfo.do"
+                )
+            ]
 
-            for link in links:
-                try:
-                    driver.get(link)
-                    contractor = urllib.parse.unquote(link.split('contractorName=')[-1].split('&')[0])
-                    info = get_contractor_details(driver, link)
-                    if info:
-                        save_contractor_details(info)
-                    else:
-                        print(f"Failed to extract details for {contractor}. Skipping...")
-                        missing_terms.append(contractor.replace('+', ' '))
-                    if test_mode:
-                        time.sleep(3)
-                except TimeoutException:
-                    print(f"Timeout while navigating to {link}. Skipping...")
-                    error_links.append(link)
-                    continue
-                except WebDriverException as e:
-                    if "dnsNotFound" in str(e):
-                        print(f"DNS or invalid URL issue for link: {link}. Skipping...")
-                        error_links.append(link)
-                        continue
-                    else:
-                        raise e
+            if test_mode:
+                # Process links sequentially in test mode
+                for link in links:
+                    result = process_contractor_link(driver, link)
+                    if result:
+                        if "http" in result:
+                            error_links.append(result)
+                        else:
+                            missing_terms.append(result)
+                    time.sleep(3)  # Add delay for testing
+            else:
+                # Use multithreading in production mode
+                with ThreadPoolExecutor(
+                    max_workers=5
+                ) as executor:  # Adjust max_workers as needed
+                    futures = {
+                        executor.submit(process_contractor_link, driver, link): link
+                        for link in links
+                    }
+                    for future in as_completed(futures):
+                        result = future.result()
+                        if result:
+                            if "http" in result:
+                                
+                            else:
+                                missing_terms.append(result)
         except Exception as e:
             print("Error:", e)
             traceback.print_exc()
 
-    pd.DataFrame(missing_terms, columns=["Missing Contractor"]).to_excel("No_Terms.xlsx", index=False)
-    pd.DataFrame(error_links, columns=["Error Links"]).to_excel("Error_Links.xlsx", index=False)
-    driver.quit()
+    driver.quit()  # Close the WebDriver
 
 
 if __name__ == "__main__":
+    # Set test_mode=True for testing with delays, False for production
     scrape_contractors(test_mode=True)
-  
