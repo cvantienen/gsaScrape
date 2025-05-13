@@ -1,5 +1,6 @@
 import time
 import csv
+import os
 import urllib.parse
 import pandas as pd
 import traceback
@@ -17,30 +18,18 @@ def get_element_text(driver, xpath, attr=None):
         return element.text.strip()
     except Exception:
         return None
-    
+
 
 def save_contractor_details(details, output_file="contractor_data.csv"):
     file_exists = os.path.isfile(output_file)
-    
     with open(output_file, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=details.keys())
         if not file_exists:
-            writer.writeheader()  # Write header only once
+            writer.writeheader()
         writer.writerow(details)
 
 
-
 def get_contractor_details(driver, link):
-    """
-    Extracts contractor details from the given link using Selenium.
-
-    Args:
-        driver: Selenium WebDriver instance.
-        link: URL of the contractor details page.
-
-    Returns:
-        A dictionary containing contractor details or None if extraction fails.
-    """
     try:
         driver.get(link)
         details = {
@@ -62,7 +51,6 @@ def get_contractor_details(driver, link):
             'EPLS Status': get_element_text(driver, "//td[font[contains(text(), 'EPLS :')]]/following-sibling::td/font")
         }
 
-        # Special handling for onclick extraction
         try:
             onclick_attr = driver.find_element(By.XPATH, "//button[contains(@title, 'view Contractors Terms & Conditions')]").get_attribute("onclick")
             details['Terms & Conditions Link'] = onclick_attr.split("'")[1] if onclick_attr else None
@@ -78,12 +66,6 @@ def get_contractor_details(driver, link):
 
 
 def scrape_contractors(test_mode=False):
-    """
-    Scrapes contractor details for all letters A-Z.
-
-    Args:
-        test_mode: If True, adds a delay between requests for testing purposes.
-    """
     missing_terms = []
     error_links = []
     options = Options()
@@ -110,7 +92,9 @@ def scrape_contractors(test_mode=False):
                     driver.get(link)
                     contractor = urllib.parse.unquote(link.split('contractorName=')[-1].split('&')[0])
                     info = get_contractor_details(driver, link)
-                    if not info:
+                    if info:
+                        save_contractor_details(info)
+                    else:
                         print(f"Failed to extract details for {contractor}. Skipping...")
                         missing_terms.append(contractor.replace('+', ' '))
                     if test_mode:
@@ -137,70 +121,4 @@ def scrape_contractors(test_mode=False):
 
 if __name__ == "__main__":
     scrape_contractors(test_mode=True)
-
-The most precise way to identify an element in Selenium is to use a unique selector that directly targets the element you want to grab. Here are some strategies to make your element identification as precise as possible:
-
-1. Use Unique id or name Attributes
-If the element has a unique id or name attribute, these are the most reliable selectors.
-
-Example:
-2. Use Specific XPath
-If the element does not have a unique id or name, use an XPath that uniquely identifies the element. Avoid overly generic XPath expressions and instead target specific attributes or structure.
-
-Tips for Precise XPath:
-Target Specific Attributes: Use attributes like @class, @title, @data-*, or any other unique attribute.
-
-Use Text Content: If the element has unique text, you can use text() or contains(text(), ...).
-
-Navigate Relative to Other Elements: Use following-sibling, parent, or ancestor to locate elements relative to others.
-
-Avoid Overly Broad Selectors: Avoid  or  without narrowing it down with attributes or structure.
-
-3. Use CSS Selectors
-CSS selectors are often faster than XPath and can be very precise if the element has unique classes or attributes.
-
-Example:
-Tips for Precise CSS Selectors:
-Use #id for unique IDs:
-
-Use .class for classes:
-
-Combine attributes:
-
-Use nth-child or nth-of-type for specific elements in a list:
-
-4. Use WebDriverWait with Conditions
-Sometimes elements take time to load. Use WebDriverWait to wait for the element to be present or visible before interacting with it.
-
-Example:
-5. Inspect the DOM for Unique Identifiers
-Use your browser's developer tools (right-click > Inspect) to analyze the DOM structure. Look for:
-
-Unique id or name attributes.
-Specific class names or data-* attributes.
-Text content that uniquely identifies the element.
-6. Test Your Selector
-Before using the selector in your script, test it in the browser's developer tools:
-
-Open the browser's console.
-Use document.querySelector for CSS selectors or $x for XPath to verify your selector works.
-Example:
-7. Fallback for Dynamic Elements
-If the element's attributes or structure change dynamically:
-
-Use contains() in XPath to match partial text or attributes.
-Use starts-with() or ends-with() for dynamic attribute values.
-Example:
-8. Use try-except for Missing Elements
-If the element might not always be present, wrap the lookup in a try-except block to handle errors gracefully.
-
-Example:
-Summary
-The most precise way to identify an element depends on the structure of the page:
-
-Prefer id or name attributes if available.
-Use specific XPath or CSS Selectors targeting unique attributes or structure.
-Test your selector in the browser's developer tools.
-Use WebDriverWait to handle dynamic loading.
-By following these strategies, you can reliably and precisely locate the elements you need.
-    """
+  
