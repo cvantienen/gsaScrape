@@ -10,6 +10,8 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 
+import settings
+
 
 def get_element_text(driver, xpath, attr=None):
     """
@@ -32,7 +34,7 @@ def get_element_text(driver, xpath, attr=None):
         return None
 
 
-def save_contractor_details(details, output_file="contractor_data.csv"):
+def append_to_csv(details, output_file="contractor_data.csv"):
     """
     Saves contractor details to a CSV file. Appends to the file if it already exists.
 
@@ -67,57 +69,58 @@ def get_contractor_details(driver, link):
             "URL": link,
             "Contract Number": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Contract #:')]]/following-sibling::td/font",
+                settings.CONTRACT_NUMBER_XPATH,
             ),
             "Contractor": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Contractor:')]]/following-sibling::td/font",
+                settings.CONTRACTOR_XPATH,
             ),
             "Address": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Address:')]]/following-sibling::td/font",
+                settings.ADDRESS_XPATH,
                 attr="innerHTML",
             ),
             "Phone": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Call:')]]/following-sibling::td/font",
+                settings.PHONE_XPATH,
             ),
             "Email": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Email:')]]/following-sibling::td/font/a",
+                settings.EMAIL_XPATH,
             ),
             "Web Address": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Web Address:')]]/following-sibling::td/font/a",
+                settings.WEB_ADDRESS_XPATH,
                 attr="href",
             ),
             "SAM UEI": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'SAM UEI:')]]/following-sibling::td/font",
+                settings.SAM_UEI_XPATH,
             ),
             "NAICS": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'NAICS:')]]/following-sibling::td/font",
+                settings.NAICS_XPATH,
             ),
             "Current Option Period End Date": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Current Option Period End Date :')]]/following-sibling::td/font",
+                settings.OPTION_XPATH,
             ),
             "Ultimate Contract End Date": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Ultimate Contract End Date :')]]/following-sibling::td/font",
+                settings.ULTIMATE_XPATH,
             ),
             "Contract Officer": get_element_text(
-                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[2]"
+                driver,
+                settings.CONTRACT_OFFICER_XPATH,
             ),
             "SINS": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Category')]]/following-sibling::td/font/a",
+                settings.SINS_XPATH,
                 attr="href",
             ),
             "Source": get_element_text(
                 driver,
-                "//td[font[contains(text(), 'Source:')]]/following-sibling::td/font/a",
+                settings.SOURCE_XPATH,
                 attr="href",
             ),
             "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -135,7 +138,6 @@ def get_contractor_details(driver, link):
         except Exception:
             details["Terms & Conditions Link"] = None
 
-        print(f"Details extracted for {details['Contractor'] or 'Unknown Contractor'}")
         return details
     except Exception as e:
         print(f"Error extracting details for link: {link}\n{e}")
@@ -160,15 +162,13 @@ def process_contractor_link(driver, link):
         )
         info = get_contractor_details(driver, link)
         if info:
-            save_contractor_details(info)  # Save the extracted details
+            append_to_csv(info)  # Save the extracted details
         else:
             empty_url = {
                 "URL": link,
                 "Contractor": contractor,
             }
-            save_contractor_details(
-                empty_url
-            )  # Save the link with contractor name only
+            append_to_csv(empty_url)  # Save the link with contractor name only
 
     except TimeoutException:
         print(f"Timeout while navigating to {link}. Skipping...")
@@ -198,7 +198,7 @@ def scrape_contractors(test_mode=True):
     # Iterate through all letters A-Z
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         try:
-            url = f"https://www.gsaelibrary.gsa.gov/ElibMain/contractorList.do?contractorListFor={letter}"
+            url = f"{settings.BASE_URL}{letter}"
             try:
                 driver.get(url)  # Navigate to the contractor list page
             except WebDriverException as e:
@@ -219,7 +219,7 @@ def scrape_contractors(test_mode=True):
             ]
 
             if test_mode:
-                links = links[:20]
+                links = links[:5]  # Limit to first 5 links for testing
                 # Process links sequentially in test mode
                 for link in links:
                     process_contractor_link(driver, link)
