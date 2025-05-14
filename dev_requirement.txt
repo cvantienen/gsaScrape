@@ -1,0 +1,47 @@
+selenium
+pandas
+openpyxl
+swiftshadow
+
+
+# Python development tools
+# Core packages
+# Django & Cookiecutter-based setup
+django
+gunicorn
+psycopg2-binary       # PostgreSQL support (remove if using a different DB)
+
+# Task queueing
+celery
+redis                 # If you're using Redis as your broker
+
+# Dev + Code quality
+black
+flake8
+mypy
+isort
+pylint
+coverage              # Code coverage for tests
+debugpy               # Debugging support (e.g. VSCode, DAP)
+django-debug-toolbar  # For debugging during dev
+
+# Django extras
+djangorestframework   # DRF if you're building APIs
+django-environ        # Environment variable management
+django-cors-headers   # CORS handling for APIs
+
+# LSP / Editor integration
+pynvim                # Required for Python support in Neovim
+python-lsp-server[all]
+pyright               # Optional alternative LSP
+autopep8              # Optional lightweight formatter
+
+# Testing
+pytest
+pytest-django
+factory-boy           # Fixtures for tests
+
+# Project/tooling
+pip-tools             # Better pip requirements handling
+setuptools
+wheel

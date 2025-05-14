@@ -209,12 +209,7 @@ def scrape_contractors(test_mode=True):
             if test_mode:
                 # Process links sequentially in test mode
                 for link in links:
-                    result = process_contractor_link(driver, link)
-                    if result:
-                        if "http" in result:
-                            error_links.append(result)
-                        else:
-                            missing_terms.append(result)
+                    process_contractor_link(driver, link)
                     time.sleep(3)  # Add delay for testing
             else:
                 # Use multithreading in production mode
@@ -226,12 +221,8 @@ def scrape_contractors(test_mode=True):
                         for link in links
                     }
                     for future in as_completed(futures):
-                        result = future.result()
-                        if result:
-                            if "http" in result:
-                                
-                            else:
-                                missing_terms.append(result)
+                        future.result()
+
         except Exception as e:
             print("Error:", e)
             traceback.print_exc()

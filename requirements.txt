@@ -1,3 +1,11 @@
 selenium
 pandas
 openpyxl
+swiftshadow
+
+
+
+
+
+
+
