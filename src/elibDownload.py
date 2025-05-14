@@ -1,14 +1,14 @@
-import time
 import csv
 import os
-import urllib.parse
-import pandas as pd
+import time
 import traceback
+import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-from selenium.common.exceptions import TimeoutException, WebDriverException
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_element_text(driver, xpath, attr=None):
@@ -64,6 +64,7 @@ def get_contractor_details(driver, link):
 
         # Extract contractor details using helper function
         details = {
+            "URL": link,
             "Contract Number": get_element_text(
                 driver,
                 "//td[font[contains(text(), 'Contract #:')]]/following-sibling::td/font",
@@ -76,7 +77,7 @@ def get_contractor_details(driver, link):
                 driver,
                 "//td[font[contains(text(), 'Address:')]]/following-sibling::td/font",
                 attr="innerHTML",
-            ).replace("<br>", ", "),
+            ),
             "Phone": get_element_text(
                 driver,
                 "//td[font[contains(text(), 'Call:')]]/following-sibling::td/font",
@@ -106,15 +107,20 @@ def get_contractor_details(driver, link):
                 driver,
                 "//td[font[contains(text(), 'Ultimate Contract End Date :')]]/following-sibling::td/font",
             ),
-            "Govt. POC Name": get_element_text(
+            "Contract Officer": get_element_text(
                 driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[2]"
             ),
-            "Govt. POC Phone": get_element_text(
-                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[3]"
+            "SINS": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Category')]]/following-sibling::td/font/a",
+                attr="href",
             ),
-            "Govt. POC Email": get_element_text(
-                driver, "//td[font[contains(text(), 'Govt. POC:')]]/font[4]/a"
+            "Source": get_element_text(
+                driver,
+                "//td[font[contains(text(), 'Source:')]]/following-sibling::td/font/a",
+                attr="href",
             ),
+            "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         # Extract additional details (e.g., Terms & Conditions link)
@@ -156,8 +162,14 @@ def process_contractor_link(driver, link):
         if info:
             save_contractor_details(info)  # Save the extracted details
         else:
-            print(f"Failed to extract details for {contractor}. Skipping...")
-            return contractor.replace("+", " ")
+            empty_url = {
+                "URL": link,
+                "Contractor": contractor,
+            }
+            save_contractor_details(
+                empty_url
+            )  # Save the link with contractor name only
+
     except TimeoutException:
         print(f"Timeout while navigating to {link}. Skipping...")
         return link
@@ -167,7 +179,7 @@ def process_contractor_link(driver, link):
             return link
         else:
             raise e  # Re-raise the exception if it's not a DNS issue
-    return None
+    return
 
 
 def scrape_contractors(test_mode=True):
@@ -180,7 +192,7 @@ def scrape_contractors(test_mode=True):
 
     # Set up the Selenium WebDriver
     options = Options()
-    options.add_argument("--headless")  # Run in headless mode for faster execution
+    options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
 
     # Iterate through all letters A-Z
@@ -201,12 +213,13 @@ def scrape_contractors(test_mode=True):
             links = [
                 elem.get_attribute("href")
                 for elem in elems
-                if elem.get_attribute("href").startswith(
+                if elem.get_attribute("href").startswith(  # FIXME
                     "https://www.gsaelibrary.gsa.gov/ElibMain/contractorInfo.do"
                 )
             ]
 
             if test_mode:
+                links = links[:20]
                 # Process links sequentially in test mode
                 for link in links:
                     process_contractor_link(driver, link)
