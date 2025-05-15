@@ -116,12 +116,10 @@ def get_contractor_details(driver, link):
             "SINS": get_element_text(
                 driver,
                 settings.SINS_XPATH,
-                attr="href",
             ),
             "Source": get_element_text(
                 driver,
                 settings.SOURCE_XPATH,
-                attr="href",
             ),
             "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -163,6 +161,7 @@ def process_contractor_link(driver, link):
         info = get_contractor_details(driver, link)
         if info:
             append_to_csv(info)  # Save the extracted details
+            print(f"Saved details for {info["Contractor"]} to CSV.")
         else:
             empty_url = {
                 "URL": link,
@@ -213,7 +212,8 @@ def scrape_contractors(test_mode=True):
             links = [
                 elem.get_attribute("href")
                 for elem in elems
-                if elem.get_attribute("href").startswith(  # FIXME
+                if elem.get_attribute("href") is not None
+                and elem.get_attribute("href").startswith(
                     "https://www.gsaelibrary.gsa.gov/ElibMain/contractorInfo.do"
                 )
             ]
@@ -235,6 +235,8 @@ def scrape_contractors(test_mode=True):
                     }
                     for future in as_completed(futures):
                         future.result()
+            if test_mode:
+                print(f"Processed {len(links)} links for letter {letter}.")
 
         except Exception as e:
             print("Error:", e)
