@@ -24,6 +24,14 @@ NAICS_XPATH = "//td[font[contains(text(), 'NAICS:')]]/following-sibling::td/font
 OPTION_XPATH = "//td[font[contains(text(), 'Current Option Period End Date :')]]/following-sibling::td/font"
 ULTIMATE_XPATH = "//td[font[contains(text(), 'Ultimate Contract End Date :')]]/following-sibling::td/font"
 CONTRACT_OFFICER_XPATH = "//td[font[contains(text(), 'Govt. POC:')]]/font[2]"
-# SINS and SOURCE are in the summary table, which is always the first <tr> after the header row with "Source"
-SINS_XPATH = "(//tr[td[1][.//a[contains(@href, 'scheduleSummary.do')]]"
-SOURCE_XPATH = "(//tr[td[1][.//a[contains(@href, 'scheduleSummary.do')]]"
+# # ...existing code...
+
+# XPath for the "Source" cell in the summary row
+SOURCE_XPATH = (
+    "//table[.//font[contains(text(), 'Source')]]//tr[td[1][.//a[contains(@href, 'scheduleSummary.do')]]]/td[1]//a"
+)
+
+# XPath for the "Category" cell in the summary row (the 7th <td>)
+SIN_XPATH = (
+    "//table[.//font[contains(text(), 'Source')]]//tr[td[1][.//a[contains(@href, 'scheduleSummary.do')]]]/td[7]//a"
+)

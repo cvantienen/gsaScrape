@@ -115,7 +115,7 @@ def get_contractor_details(driver, link):
             ),
             "SINS": get_element_text(
                 driver,
-                settings.SINS_XPATH,
+                settings.SIN_XPATH,
             ),
             "Source": get_element_text(
                 driver,
