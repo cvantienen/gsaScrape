@@ -4,32 +4,45 @@ import time
 import traceback
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
 
 import settings
+import webdriver
 
+driver = webdriver.setup_driver()
 
-def get_element_text(driver, xpath, attr=None):
+def get_element_text(driver, xpath, attr=None, all_text=False, join_str=" | "):
     """
-    Extracts text or attribute value from an element located by the given XPath.
+    Extracts text or attribute value(s) from element(s) located by the given XPath.
 
     Args:
         driver: Selenium WebDriver instance.
-        xpath: XPath string to locate the element.
+        xpath: XPath string to locate the element(s).
         attr: Optional attribute name to extract (e.g., "href"). If None, extracts text.
+        all_text: If True, returns all matching elements' text/attr as a list (or joined string).
+        join_str: String to join all texts if all_text is True and you want a single string.
 
     Returns:
-        The extracted text or attribute value, or None if the element is not found.
+        The extracted text/attribute value, a list of them, or None if not found.
     """
     try:
-        element = driver.find_element(By.XPATH, xpath)
-        if attr:
-            return element.get_attribute(attr).strip()
-        return element.text.strip()
+        if all_text:
+            elements = driver.find_elements(By.XPATH, xpath)
+            results = []
+            for elem in elements:
+                if attr:
+                    val = elem.get_attribute(attr)
+                else:
+                    val = elem.text
+                if val:
+                    results.append(val.strip())
+            return join_str.join(results) if results else None
+        else:
+            element = driver.find_element(By.XPATH, xpath)
+            if attr:
+                return element.get_attribute(attr).strip()
+            return element.text.strip()
     except Exception:
         return None
 
@@ -116,6 +129,7 @@ def get_contractor_details(driver, link):
             "SINS": get_element_text(
                 driver,
                 settings.SIN_XPATH,
+                all_text=True,
             ),
             "Source": get_element_text(
                 driver,
@@ -188,12 +202,6 @@ def scrape_contractors(test_mode=True):
     Args:
         test_mode: If True, adds a delay between requests for testing purposes.
     """
-
-    # Set up the Selenium WebDriver
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
-
     # Iterate through all letters A-Z
     for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         try:
